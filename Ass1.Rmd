@@ -1,0 +1,224 @@
+---
+title: "Assignment 1"
+author: "Mariam Mohamed"
+date: "April 6, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+###Include libraries
+```{r}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(ggplot2)
+```
+
+###Read data
+```{r}
+by2ollak = read.csv("/Users/apple/Documents/Mariam/GUC/10th semester/data science/traffic-data.csv")
+```
+
+
+###Remove some cols
+```{r}
+by2ollak <- by2ollak[, !(names(by2ollak) %in% c("ad.aid", "ad.bgcl", "ad.bgcls", "ad.fncl", "ad.fncls", "ad.lid", "ad.logo", "ad.logo2x", "ad.logoAndroidS", "ad.logoAndroidH", "ad.cm", "ad.url", "ad.g", "rd.rp.type", "rd.rp.rpImg", "rd.rp.img", "rd.img", "rd.cl", "rd.rp.fullnm"))]
+```
+
+###Remove UTC from the date
+```{r}
+by2ollak$crawl_date = gsub(" UTC", "", by2ollak$crawl_date)
+```
+
+
+
+###Convert date to postix
+```{r}
+by2ollak$crawl_date = strptime(by2ollak$crawl_date, "%a %b %d %H:%M:%S %Y")
+```
+
+###Remove EET from date
+```{r}
+by2ollak$crawl_date = gsub(" EET", "", by2ollak$crawl_date)
+```
+
+
+###Add date and time cols
+```{r}
+by2ollak = by2ollak %>% mutate(col_month = month(crawl_date), col_day = day(crawl_date), col_wday = wday(crawl_date), col_year = year(crawl_date))
+```
+
+
+###Add more date and time cols
+```{r}
+by2ollak = by2ollak %>% mutate(col_hour = hour(crawl_date), col_minute = minute(crawl_date))
+```
+
+
+###Remove duplicates (same road, comment, reporter name, month, day)
+```{r}
+by2ollak = by2ollak[!duplicated(by2ollak[,c('rd.ri', 'rd.rp.cm', 'rd.rp.nm', 'col_month', 'col_day')]),]
+```
+
+###Data sumary
+```{r}
+summary(by2ollak)
+```
+From the
+summary, we can infer that people are not reporting in the first and last weeks of months.
+
+### Plots
+```{r}
+ggplot(by2ollak, aes(x = col_day)) + geom_histogram(binwidth = 0.5)
+```
+
+```{r}
+ggplot(by2ollak, aes(x = col_hour)) + geom_histogram(binwidth = 0.5)
+```
+
+```{r}
+ggplot(by2ollak, aes(x = col_wday)) + geom_histogram(binwidth = 0.5)
+```
+
+```{r}
+ggplot(by2ollak, aes(x = col_month)) + geom_histogram(binwidth = 0.5)
+```
+
+###Number of comments per hour
+```{r}
+cm_per_hour = aggregate(by2ollak$rd.rp.cm, list(hour = by2ollak$col_hour), length)
+qplot(cm_per_hour$hour, cm_per_hour$x, xlab = "hour", ylab = "# comments")
+
+rm(cm_per_hour)
+```
+
+
+###Number of comments per day
+```{r}
+cm_per_day = aggregate(by2ollak$rd.rp.cm, list(day = by2ollak$col_day), length)
+qplot(cm_per_day$day, cm_per_day$x, xlab = "day", ylab = "# comments")
+
+rm(cm_per_day)
+```
+
+
+
+###Number of comments per wday(wday : week day)
+```{r}
+cm_per_wday = aggregate(by2ollak$rd.rp.cm, list(wday = by2ollak$col_wday), length)
+qplot(cm_per_wday$wday, cm_per_wday$x, xlab = "wday", ylab = "# comments")
+
+rm(cm_per_wday)
+```
+
+
+
+###Number of comments per road
+```{r}
+cm_per_rd = aggregate(by2ollak$rd.rp.cm, list(road = by2ollak$rd.nm), length)
+qplot(cm_per_rd$road, cm_per_rd$x, xlab = "road", ylab = "# comments")
+
+rm(cm_per_rd)
+```
+
+
+
+###Number of comments per road and hour
+```{r}
+cm_per_road_hour = aggregate(by2ollak$rd.rp.cm, list(road = by2ollak$rd.nm, hour = by2ollak$col_hour), length)
+
+rm(cm_per_road_hour)
+```
+
+
+
+###lazeez
+```{r}
+lazeez = by2ollak[grepl('^lazeez', by2ollak$rd.rp.cm),]
+
+hist(lazeez$col_hour, xlab = "hour", breaks = c(0:24))
+hist(lazeez$col_wday, xlab = "week day", breaks = c(0:7))
+hist(lazeez$col_day, xlab = "day", breaks = c(0:30))
+```
+
+We can infer that people are reporting lazeez on friday ans Saturday(weekend)
+
+###Summary of lazeez
+```{r}
+summary(lazeez)
+```
+
+
+###mashy
+```{r}
+mashy = by2ollak[grepl('^mashy', by2ollak$rd.rp.cm),]
+
+hist(mashy$col_hour, xlab = "hour", breaks = c(0:24))
+hist(mashy$col_wday, xlab = "week day", breaks = c(0:7))
+hist(mashy$col_day, xlab = "day", breaks = c(0:30))
+```
+
+###Summary of mashy
+```{r}
+summary(mashy)
+```
+
+
+###7alawa
+```{r}
+halawa = by2ollak[grepl('^7alawa', by2ollak$rd.rp.cm),]
+
+hist(halawa$col_hour, xlab = "hour", breaks = c(0:24))
+hist(halawa$col_wday, xlab = "week day", breaks = c(0:7))
+hist(halawa$col_day, xlab = "day", breaks = c(0:30))
+```
+
+
+###Summary of 7alawa
+```{r}
+summary(halawa)
+```
+
+###za7ma
+```{r}
+za7ma = by2ollak[grepl('^za7ma', by2ollak$rd.rp.cm),]
+
+hist(za7ma$col_hour, xlab = "hour", breaks = c(0:24))
+hist(za7ma$col_wday, xlab = "week day", breaks = c(0:7))
+hist(za7ma$col_day, xlab = "day", breaks = c(0:30))
+```
+
+###Summary of za7ma
+```{r}
+summary(za7ma)
+```
+
+###mafeesh 2amal
+```{r}
+mafeesh_2amal = by2ollak[grepl('^mafeesh 2amal', by2ollak$rd.rp.cm),]
+
+hist(mafeesh_2amal$col_hour, xlab = "hour", breaks = c(0:24))
+hist(mafeesh_2amal$col_wday, xlab = "week day", breaks = c(0:7))
+hist(mafeesh_2amal$col_day, xlab = "day", breaks = c(0:30))
+```
+
+###Summary of mafeesh_2amal
+```{r}
+summary(mafeesh_2amal)
+```
+
+###Remove some variables we won't use
+```{r}
+rm(lazeez)
+rm(mashy)
+rm(halawa)
+rm(za7ma)
+rm(mafeesh_2amal)
+```
+
+
+
+
