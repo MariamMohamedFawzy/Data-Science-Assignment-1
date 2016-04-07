@@ -14,12 +14,18 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(ggplot2)
 library(lubridate)
-library(ggplot2)
+library(doBy)
 ```
 
 ###Read data
 ```{r}
 by2ollak = read.csv("/Users/apple/Documents/Mariam/GUC/10th semester/data science/traffic-data.csv")
+```
+
+```{r}
+dim(by2ollak)
+str(by2ollak)
+summary(by2ollak)
 ```
 
 
@@ -48,13 +54,7 @@ by2ollak$crawl_date = gsub(" EET", "", by2ollak$crawl_date)
 
 ###Add date and time cols
 ```{r}
-by2ollak = by2ollak %>% mutate(col_month = month(crawl_date), col_day = day(crawl_date), col_wday = wday(crawl_date), col_year = year(crawl_date))
-```
-
-
-###Add more date and time cols
-```{r}
-by2ollak = by2ollak %>% mutate(col_hour = hour(crawl_date), col_minute = minute(crawl_date))
+by2ollak = by2ollak %>% mutate(col_month = month(crawl_date), col_day = day(crawl_date), col_wday = wday(crawl_date), col_year = year(crawl_date), col_hour = hour(crawl_date), col_minute = minute(crawl_date))
 ```
 
 
@@ -65,10 +65,24 @@ by2ollak = by2ollak[!duplicated(by2ollak[,c('rd.ri', 'rd.rp.cm', 'rd.rp.nm', 'co
 
 ###Data sumary
 ```{r}
+dim(by2ollak)
+str(by2ollak)
 summary(by2ollak)
 ```
-From the
-summary, we can infer that people are not reporting in the first and last weeks of months.
+
+###number of reports in new 1/0 roads
+
+```{r}
+rp_roads = aggregate(by2ollak$rd.rp.cm, list(new = by2ollak$rd.new), length)
+qplot(rp_roads$new, rp_roads$x, xlab = "new", ylab = "# comments")
+```
+
+###na(s) in cols
+```{r}
+barplot(sapply(by2ollak, function(col) sum(is.na(col))))
+```
+
+
 
 ### Plots
 ```{r}
@@ -92,7 +106,6 @@ ggplot(by2ollak, aes(x = col_month)) + geom_histogram(binwidth = 0.5)
 cm_per_hour = aggregate(by2ollak$rd.rp.cm, list(hour = by2ollak$col_hour), length)
 qplot(cm_per_hour$hour, cm_per_hour$x, xlab = "hour", ylab = "# comments")
 
-rm(cm_per_hour)
 ```
 
 
@@ -101,7 +114,6 @@ rm(cm_per_hour)
 cm_per_day = aggregate(by2ollak$rd.rp.cm, list(day = by2ollak$col_day), length)
 qplot(cm_per_day$day, cm_per_day$x, xlab = "day", ylab = "# comments")
 
-rm(cm_per_day)
 ```
 
 
@@ -111,7 +123,6 @@ rm(cm_per_day)
 cm_per_wday = aggregate(by2ollak$rd.rp.cm, list(wday = by2ollak$col_wday), length)
 qplot(cm_per_wday$wday, cm_per_wday$x, xlab = "wday", ylab = "# comments")
 
-rm(cm_per_wday)
 ```
 
 
@@ -121,7 +132,6 @@ rm(cm_per_wday)
 cm_per_rd = aggregate(by2ollak$rd.rp.cm, list(road = by2ollak$rd.nm), length)
 qplot(cm_per_rd$road, cm_per_rd$x, xlab = "road", ylab = "# comments")
 
-rm(cm_per_rd)
 ```
 
 
@@ -130,7 +140,6 @@ rm(cm_per_rd)
 ```{r}
 cm_per_road_hour = aggregate(by2ollak$rd.rp.cm, list(road = by2ollak$rd.nm, hour = by2ollak$col_hour), length)
 
-rm(cm_per_road_hour)
 ```
 
 
@@ -210,15 +219,42 @@ hist(mafeesh_2amal$col_day, xlab = "day", breaks = c(0:30))
 summary(mafeesh_2amal)
 ```
 
-###Remove some variables we won't use
+
+###Models
 ```{r}
-rm(lazeez)
-rm(mashy)
-rm(halawa)
-rm(za7ma)
-rm(mafeesh_2amal)
+model1 <- lm(col_hour ~ col_wday, data=by2ollak)
+summary(model1)
+layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page 
+plot(model1)
+termplot(model1)
+```
+
+```{r}
+coplot(col_wday~col_day|col_hour, data = by2ollak)
+```
+
+```{r}
+model2 = lm(col_hour~col_day + col_wday, data = by2ollak)
+layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page 
+plot(model2)
+summary(model2)
+```
+
+```{r}
+anova(model1, model2)
 ```
 
 
+```{r}
+model3 <- lm(col_hour ~ col_wday, data=lazeez)
+summary(model3)
+layout(matrix(c(1,2,3,4),2,2)) 
+plot(model3)
+termplot(model3)
+```
 
+```{r}
+summaryBy(rd.nm ~ col_hour + col_wday, data = by2ollak, 
+ 	FUN = function(x) { c(num_of_roads = length(unique(x))) } )
+```
 
